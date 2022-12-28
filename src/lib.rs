@@ -14,6 +14,8 @@ use num::bigint::Sign;
 // Types
 //
 
+pub type DecodingResult = Result<ErlangExtTerm, DecodingError>;
+
 #[derive(Error, Debug)]
 pub enum DecodingError {
     #[error("unrecognized external term format tag")]
@@ -40,7 +42,8 @@ pub enum ErlangExtTerm {
     SmallInteger(u8),
     Integer(i32),
     BigInteger(BigInt),
-    Float(f64)
+    Float(f64),
+    Binary(Vec<u8>)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -58,7 +61,7 @@ pub struct BigInteger {
 //
 
 impl ErlangExtTerm {
-    pub fn decode(reader: Box<dyn io::Read>) -> Result<ErlangExtTerm, DecodingError> {
+    pub fn decode(reader: Box<dyn io::Read>) -> DecodingResult {
         return Decoder::new(reader).decode();
     }
 }
@@ -76,7 +79,7 @@ impl Decoder {
         }
     }
 
-    pub fn decode(mut self) -> Result<ErlangExtTerm, DecodingError> {
+    pub fn decode(mut self) -> DecodingResult {
         let version = self.reader.read_u8()?;
         if version != constants::TERM_FORMAT_VERSION {
             return Err(DecodingError::UnsupportedVersion { version });
@@ -88,7 +91,7 @@ impl Decoder {
         return self.decode_tagged_with(tag);
     }
 
-    fn decode_tagged_with(&mut self, tag: u8) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_tagged_with(&mut self, tag: u8) -> DecodingResult {
         match tag {
             constants::ATOM_EXT => self.decode_atom_ext(),
             constants::ATOM_UTF8_EXT => self.decode_atom_utf8_ext(),
@@ -98,12 +101,13 @@ impl Decoder {
             constants::SMALL_BIG_EXT => self.decode_small_big_integer(),
             constants::LARGE_BIG_EXT => self.decode_large_big_integer(),
             constants::NEW_FLOAT_EXT => self.decode_float(),
+            constants::BINARY_EXT => self.decode_binary(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
 
     // Legacy atom encoding format, assumes Latin1 (Windows-1252) encoding
-    fn decode_atom_ext(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_atom_ext(&mut self) -> DecodingResult {
         let length = self.reader.read_u16::<BigEndian>()?;
         self.buffer.resize(length as usize, 0);
         self.reader.read_exact(&mut self.buffer)?;
@@ -118,7 +122,7 @@ impl Decoder {
     }
 
     // Modern atom encoding format, assumes UTF-8 encoding
-    fn decode_atom_utf8_ext(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_atom_utf8_ext(&mut self) -> DecodingResult {
         let length = self.reader.read_u16::<BigEndian>()?;
         self.buffer.resize(length as usize, 0);
         self.reader.read_exact(&mut self.buffer)?;
@@ -133,7 +137,7 @@ impl Decoder {
     }
 
     // Modern atom encoding format, assumes UTF-8 encoding
-    fn decode_small_atom_utf8_ext(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_small_atom_utf8_ext(&mut self) -> DecodingResult {
         let length: u8 = self.reader.read_u8()?;
         self.buffer.resize(length as usize, 0);
         self.reader.read_exact(&mut self.buffer)?;
@@ -147,7 +151,7 @@ impl Decoder {
         }
     }
 
-    fn decode_small_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_small_integer(&mut self) -> DecodingResult {
         match self.reader.read_u8() {
             Ok(i)  => Ok(ErlangExtTerm::SmallInteger(i)),
             Err(e) => {
@@ -157,7 +161,7 @@ impl Decoder {
         }
     }
 
-    fn decode_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_integer(&mut self) -> DecodingResult {
         match self.reader.read_i32::<BigEndian>() {
             Ok(i)  => Ok(ErlangExtTerm::Integer(i)),
             Err(e) => {
@@ -167,7 +171,7 @@ impl Decoder {
         }
     }
 
-    fn decode_small_big_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_small_big_integer(&mut self) -> DecodingResult {
         let n = self.reader.read_u8()? as usize;
         let sign = self.reader.read_u8()?;
 
@@ -180,7 +184,7 @@ impl Decoder {
         Ok(ErlangExtTerm::BigInteger(val))
     }
 
-    fn decode_large_big_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_large_big_integer(&mut self) -> DecodingResult {
         let n = self.reader.read_u32::<BigEndian>()? as usize;
         let sign = self.reader.read_u8()?;
 
@@ -193,7 +197,7 @@ impl Decoder {
         Ok(ErlangExtTerm::BigInteger(val))
     }
 
-    fn decode_float(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+    fn decode_float(&mut self) -> DecodingResult {
         match self.reader.read_f64::<BigEndian>() {
             Ok(i)  => Ok(ErlangExtTerm::Float(i)),
             Err(e) => {
@@ -201,6 +205,14 @@ impl Decoder {
                 Err(DecodingError::DecodingFailure(io_e))
             }
         }
+    }
+
+    fn decode_binary(&mut self) -> DecodingResult {
+        let n = self.reader.read_u32::<BigEndian>()? as usize;
+        let mut input = vec![0; n];
+
+        self.reader.read_exact(&mut input)?;
+        Ok(ErlangExtTerm::Binary(input))
     }
 }
 

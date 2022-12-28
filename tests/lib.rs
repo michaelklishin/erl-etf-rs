@@ -145,6 +145,23 @@ fn decode_negative_float() {
     assert_eq!(float(-121.7), res1);
 }
 
+#[test]
+fn decode_binary() {
+    // 47> term_to_binary(<<"abc">>).
+    // <<131,109,0,0,0,3,97,98,99>>
+    let input1 = Box::new(Cursor::new(&[131, 109, 0, 0, 0, 3, 97, 98, 99]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(binary("abc"), res1);
+
+    // 49> term_to_binary(<<"abc кириллица"/utf8>>).
+    // <<131,109,0,0,0,22,97,98,99,32,208,186,208,184,209,128,208,184,208,187,208,187,208,184,209,134,208,176>>
+    let input2 = Box::new(Cursor::new(&[
+        131, 109, 0, 0, 0, 22, 97, 98, 99, 32, 208, 186, 208, 184, 209, 128, 208, 184, 208, 187, 208, 187, 208, 184, 209, 134, 208, 176
+    ]));
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(binary("abc кириллица"), res2);
+}
+
 //
 // Helpers
 //
@@ -167,4 +184,8 @@ fn big_integer(i: i64) -> ErlangExtTerm {
 
 fn float(i: f64) -> ErlangExtTerm {
     ErlangExtTerm::Float(i)
+}
+
+fn binary(s: &str) -> ErlangExtTerm {
+    ErlangExtTerm::Binary(s.as_bytes().to_vec())
 }
