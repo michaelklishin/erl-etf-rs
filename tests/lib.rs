@@ -127,22 +127,44 @@ fn decode_negative_integer() {
     assert_eq!(integer(-1), res2);
 }
 
+#[test]
+fn decode_positive_float() {
+    // 35> term_to_binary(121.7)
+    // <<131,70,64,94,108,204,204,204,204,205>>
+    let input1 = Box::new(Cursor::new(&[131, 70, 64, 94, 108, 204, 204, 204, 204, 205]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(float(121.7), res1);
+}
+
+#[test]
+fn decode_negative_float() {
+    // 36> term_to_binary(-121.7).
+    // <<131,70,192,94,108,204,204,204,204,205>>
+    let input1 = Box::new(Cursor::new(&[131, 70, 192, 94, 108, 204, 204, 204, 204, 205]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(float(-121.7), res1);
+}
+
 //
 // Helpers
 //
 
 fn atom(s: &str) -> ErlangExtTerm {
-    return ErlangExtTerm::Atom(s.to_string());
+    ErlangExtTerm::Atom(s.to_string())
 }
 
 fn small_integer(i: u8) -> ErlangExtTerm {
-    return ErlangExtTerm::SmallInteger(i);
+    ErlangExtTerm::SmallInteger(i)
 }
 
 fn integer(i: i32) -> ErlangExtTerm {
-    return ErlangExtTerm::Integer(i);
+    ErlangExtTerm::Integer(i)
 }
 
 fn big_integer(i: i64) -> ErlangExtTerm {
-    return ErlangExtTerm::BigInteger(i.to_bigint().unwrap());
+    ErlangExtTerm::BigInteger(i.to_bigint().unwrap())
+}
+
+fn float(i: f64) -> ErlangExtTerm {
+    ErlangExtTerm::Float(i)
 }

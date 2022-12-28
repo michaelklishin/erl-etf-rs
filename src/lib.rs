@@ -34,12 +34,13 @@ pub enum DecodingError {
     Other,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ErlangExtTerm {
     Atom(String),
     SmallInteger(u8),
     Integer(i32),
-    BigInteger(BigInt)
+    BigInteger(BigInt),
+    Float(f64)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -96,6 +97,7 @@ impl Decoder {
             constants::INTEGER_EXT => self.decode_integer(),
             constants::SMALL_BIG_EXT => self.decode_small_big_integer(),
             constants::LARGE_BIG_EXT => self.decode_large_big_integer(),
+            constants::NEW_FLOAT_EXT => self.decode_float(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -189,6 +191,16 @@ impl Decoder {
         // The digits are stored with the least significant byte stored first.
         let val = BigInt::from_bytes_le(to_sign(sign)?, &self.buffer);
         Ok(ErlangExtTerm::BigInteger(val))
+    }
+
+    fn decode_float(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+        match self.reader.read_f64::<BigEndian>() {
+            Ok(i)  => Ok(ErlangExtTerm::Float(i)),
+            Err(e) => {
+                let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
+                Err(DecodingError::DecodingFailure(io_e))
+            }
+        }
     }
 }
 

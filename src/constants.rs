@@ -12,9 +12,13 @@ pub(crate) const SMALL_ATOM_UTF8_EXT: u8 = 119;
 pub(crate) const ATOM_EXT: u8 = 100;
 #[allow(dead_code)]
 pub(crate) const SMALL_ATOM_EXT: u8 = 115;
-
+// Sections 12.27, 12.6
+pub(crate) const NEW_FLOAT_EXT: u8 = 70;
+// Section 12.4
 pub(crate) const SMALL_INTEGER_EXT: u8 = 97;
+// Section 12.5
 pub(crate) const INTEGER_EXT: u8 = 98;
-pub(crate) const FLOAT_EXT: u8 = 99;
+// Section 12.18
 pub(crate) const SMALL_BIG_EXT: u8 = 110;
+// Section 12.19
 pub(crate) const LARGE_BIG_EXT: u8 = 111;
