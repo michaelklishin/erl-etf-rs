@@ -2,14 +2,11 @@ extern crate erl_etf;
 
 use erl_etf::*;
 use std::io::Cursor;
+use num::bigint::ToBigInt;
 
 //
 // Decoding
 //
-
-fn atom(s: &str) -> ErlangExtTerm {
-    return ErlangExtTerm::Atom(s.to_string());
-}
 
 #[test]
 fn decode_atom() {
@@ -75,7 +72,73 @@ fn decode_atom() {
     assert_eq!(atom(s), res7);
 }
 
+#[test]
+fn decode_small_integer() {
+    // 1> term_to_binary(1).
+    // <<131,97,1>>
+    let input1 = Box::new(Cursor::new(&[131, 97, 1]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(small_integer(1), res1);
+    // 11> term_to_binary(255).
+    // <<131,97,255>>
+    let input2 = Box::new(Cursor::new(&[131, 97, 255]));
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(small_integer(255), res2);
+}
+
+#[test]
+fn decode_integer() {
+    // 10> term_to_binary(256).
+    // <<131,98,0,0,1,0>>
+    let input1 = Box::new(Cursor::new(&[131, 98, 0, 0, 1, 0]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(integer(256), res1);
+    // 3> term_to_binary(1000).
+    // <<131,98,0,0,3,232>>
+    let input2 = Box::new(Cursor::new(&[131, 98, 0, 0, 3, 232]));
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(integer(1000), res2);
+}
+
+#[test]
+fn decode_big_integer() {
+    // 21> term_to_binary(5130000000).
+    // <<131,110,5,0,128,150,197,49,1>>
+    let input1 = Box::new(Cursor::new(&[131, 110, 5, 0, 128, 150, 197, 49, 1]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(big_integer(5130000000), res1);
+}
+
+#[test]
+fn decode_negative_integer() {
+    // 12> term_to_binary(-1000).
+    // <<131,98,255,255,252,24>>
+    let input1 = Box::new(Cursor::new(&[131, 98, 255, 255, 252, 24]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(integer(-1000), res1);
+    // 13> term_to_binary(-1).
+    // <<131,98,255,255,255,255>>
+    let input2 = Box::new(Cursor::new(&[131, 98, 255, 255, 255, 255]));
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(integer(-1), res2);
+}
+
 //
 // Helpers
 //
 
+fn atom(s: &str) -> ErlangExtTerm {
+    return ErlangExtTerm::Atom(s.to_string());
+}
+
+fn small_integer(i: u8) -> ErlangExtTerm {
+    return ErlangExtTerm::SmallInteger(i);
+}
+
+fn integer(i: i32) -> ErlangExtTerm {
+    return ErlangExtTerm::Integer(i);
+}
+
+fn big_integer(i: i64) -> ErlangExtTerm {
+    return ErlangExtTerm::BigInteger(i.to_bigint().unwrap());
+}

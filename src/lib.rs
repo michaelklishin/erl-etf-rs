@@ -7,6 +7,8 @@ use std::io::Read;
 use byteorder::{BigEndian, ReadBytesExt};
 use encoding_rs::WINDOWS_1252;
 use thiserror::Error;
+use num::bigint::BigInt;
+use num::bigint::Sign;
 
 //
 // Types
@@ -34,12 +36,20 @@ pub enum DecodingError {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub enum ErlangExtTerm {
-    Atom(String)
+    Atom(String),
+    SmallInteger(u8),
+    Integer(i32),
+    BigInteger(BigInt)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Atom {
     pub name: String
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct BigInteger {
+    pub value: BigInt
 }
 
 //
@@ -82,6 +92,9 @@ impl Decoder {
             constants::ATOM_EXT => self.decode_atom_ext(),
             constants::ATOM_UTF8_EXT => self.decode_atom_utf8_ext(),
             constants::SMALL_ATOM_UTF8_EXT => self.decode_small_atom_utf8_ext(),
+            constants::SMALL_INTEGER_EXT => self.decode_small_integer(),
+            constants::INTEGER_EXT => self.decode_integer(),
+            constants::SMALL_BIG_EXT => self.decode_small_big_integer(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -130,8 +143,48 @@ impl Decoder {
             }
         }
     }
+
+    fn decode_small_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+        match self.reader.read_u8() {
+            Ok(i)  => Ok(ErlangExtTerm::SmallInteger(i)),
+            Err(e) => {
+                let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
+                Err(DecodingError::DecodingFailure(io_e))
+            }
+        }
+    }
+
+    fn decode_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+        match self.reader.read_i32::<BigEndian>() {
+            Ok(i)  => Ok(ErlangExtTerm::Integer(i)),
+            Err(e) => {
+                let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
+                Err(DecodingError::DecodingFailure(io_e))
+            }
+        }
+    }
+
+    fn decode_small_big_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+        let n = self.reader.read_u8()? as usize;
+        let sign = self.reader.read_u8()?;
+
+        self.buffer.resize(n, 0);
+        self.reader.read_exact(&mut self.buffer)?;
+
+        // section 12.18:
+        // The digits are stored with the least significant byte stored first.
+        let val = BigInt::from_bytes_le(to_sign(sign)?, &self.buffer);
+        Ok(ErlangExtTerm::BigInteger(val))
+    }
 }
 
+pub fn to_sign(i: u8) -> io::Result<Sign> {
+    match i {
+        0 => Ok(Sign::Plus),
+        1 => Ok(Sign::Minus),
+        _ => Err(io::Error::new(io::ErrorKind::InvalidData, format!("BigInteger sign must be either 0 or 1, given: {}", i)))
+    }
+}
 
 impl From<Atom> for ErlangExtTerm {
     fn from(val: Atom) -> Self {

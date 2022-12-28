@@ -12,3 +12,9 @@ pub(crate) const SMALL_ATOM_UTF8_EXT: u8 = 119;
 pub(crate) const ATOM_EXT: u8 = 100;
 #[allow(dead_code)]
 pub(crate) const SMALL_ATOM_EXT: u8 = 115;
+
+pub(crate) const SMALL_INTEGER_EXT: u8 = 97;
+pub(crate) const INTEGER_EXT: u8 = 98;
+pub(crate) const FLOAT_EXT: u8 = 99;
+pub(crate) const SMALL_BIG_EXT: u8 = 110;
+pub(crate) const LARGE_BIG_EXT: u8 = 111;
