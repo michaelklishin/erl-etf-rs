@@ -95,6 +95,7 @@ impl Decoder {
             constants::SMALL_INTEGER_EXT => self.decode_small_integer(),
             constants::INTEGER_EXT => self.decode_integer(),
             constants::SMALL_BIG_EXT => self.decode_small_big_integer(),
+            constants::LARGE_BIG_EXT => self.decode_large_big_integer(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -166,6 +167,19 @@ impl Decoder {
 
     fn decode_small_big_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
         let n = self.reader.read_u8()? as usize;
+        let sign = self.reader.read_u8()?;
+
+        self.buffer.resize(n, 0);
+        self.reader.read_exact(&mut self.buffer)?;
+
+        // section 12.18:
+        // The digits are stored with the least significant byte stored first.
+        let val = BigInt::from_bytes_le(to_sign(sign)?, &self.buffer);
+        Ok(ErlangExtTerm::BigInteger(val))
+    }
+
+    fn decode_large_big_integer(&mut self) -> Result<ErlangExtTerm, DecodingError> {
+        let n = self.reader.read_u32::<BigEndian>()? as usize;
         let sign = self.reader.read_u8()?;
 
         self.buffer.resize(n, 0);

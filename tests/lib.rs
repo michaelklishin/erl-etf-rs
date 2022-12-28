@@ -107,6 +107,10 @@ fn decode_big_integer() {
     let input1 = Box::new(Cursor::new(&[131, 110, 5, 0, 128, 150, 197, 49, 1]));
     let res1 = ErlangExtTerm::decode(input1).unwrap();
     assert_eq!(big_integer(5130000000), res1);
+    // change term type to 111 (LARGE_BIG_EXT), pad the length value
+    let input2 = Box::new(Cursor::new(&[131, 111, 0, 0, 0, 5, 0, 128, 150, 197, 49, 1]));
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(big_integer(5130000000), res2);
 }
 
 #[test]
