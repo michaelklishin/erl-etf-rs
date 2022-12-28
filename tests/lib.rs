@@ -162,6 +162,13 @@ fn decode_binary() {
     assert_eq!(binary("abc кириллица"), res2);
 }
 
+#[test]
+fn decode_bit_binary() {
+    let input1 = Box::new(Cursor::new(&[131, 77, 0, 0, 0, 3, 5, 1, 2, 24]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(bit_binary(vec![1, 2, 3], 5), res1);
+}
+
 //
 // Helpers
 //
@@ -188,4 +195,8 @@ fn float(i: f64) -> ErlangExtTerm {
 
 fn binary(s: &str) -> ErlangExtTerm {
     ErlangExtTerm::Binary(s.as_bytes().to_vec())
+}
+
+fn bit_binary(data: Vec<u8>, tail_len: u8) -> ErlangExtTerm {
+    ErlangExtTerm::BitBinary(data, tail_len)
 }

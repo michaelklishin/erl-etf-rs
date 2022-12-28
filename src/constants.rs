@@ -22,5 +22,8 @@ pub(crate) const INTEGER_EXT: u8 = 98;
 pub(crate) const SMALL_BIG_EXT: u8 = 110;
 // Section 12.19
 pub(crate) const LARGE_BIG_EXT: u8 = 111;
+
+// Section 12.26
+pub(crate) const BIT_BINARY_EXT: u8 = 77;
 // Section 12.17
 pub(crate) const BINARY_EXT: u8 = 109;

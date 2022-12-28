@@ -43,6 +43,7 @@ pub enum ErlangExtTerm {
     Integer(i32),
     BigInteger(BigInt),
     Float(f64),
+    BitBinary(Vec<u8>, u8),
     Binary(Vec<u8>)
 }
 
@@ -54,6 +55,12 @@ pub struct Atom {
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct BigInteger {
     pub value: BigInt
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct BitBinary {
+    pub bytes: Vec<u8>,
+    pub num_of_trailing_bits: u8
 }
 
 //
@@ -102,6 +109,7 @@ impl Decoder {
             constants::LARGE_BIG_EXT => self.decode_large_big_integer(),
             constants::NEW_FLOAT_EXT => self.decode_float(),
             constants::BINARY_EXT => self.decode_binary(),
+            constants::BIT_BINARY_EXT => self.decode_bit_binary(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -213,6 +221,20 @@ impl Decoder {
 
         self.reader.read_exact(&mut input)?;
         Ok(ErlangExtTerm::Binary(input))
+    }
+
+    fn decode_bit_binary(&mut self) -> DecodingResult {
+        let n = self.reader.read_u32::<BigEndian>()? as usize;
+        let tail_len = self.reader.read_u8()?;
+
+        let mut input = vec![0; n];
+        self.reader.read_exact(&mut input)?;
+        if !input.is_empty() {
+            let shift_by = 8 - tail_len;
+            let tail = input[n - 1] >> shift_by;
+            input[n - 1] = tail;
+        }
+        Ok(ErlangExtTerm::BitBinary(input, tail_len))
     }
 }
 
