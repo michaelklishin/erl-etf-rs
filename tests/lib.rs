@@ -169,6 +169,17 @@ fn decode_bit_binary() {
     assert_eq!(bit_binary(vec![1, 2, 3], 5), res1);
 }
 
+#[test]
+fn decode_pid() {
+    // term_to_binary(self()).
+    // <<131,88,100,0,13,110,111,110,111,100,101,64,110,111,104,111,115,116,0,0,0,87,0,0,0,0,0,0,0,0>>
+    let input1 = Box::new(Cursor::new(&[
+        131,88,100,0,13,110,111,110,111,100,101,64,110,111,104,111,115,116,0,0,0,87,0,0,0,0,0,0,0,0
+    ]));
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(erl_pid(atom("nonode@nohost"), 87, 0, 0), res1);
+}
+
 //
 // Helpers
 //
@@ -199,4 +210,11 @@ fn binary(s: &str) -> ErlangExtTerm {
 
 fn bit_binary(data: Vec<u8>, tail_len: u8) -> ErlangExtTerm {
     ErlangExtTerm::BitBinary(data, tail_len)
+}
+
+fn erl_pid(node: ErlangExtTerm, id: u32, serial: u32, creation: u32) -> ErlangExtTerm {
+    ErlangExtTerm::ErlPid(ErlPid {
+        node: TryInto::<Atom>::try_into(node).unwrap(),
+        id, serial, creation
+    })
 }

@@ -9,6 +9,7 @@ use encoding_rs::WINDOWS_1252;
 use thiserror::Error;
 use num::bigint::BigInt;
 use num::bigint::Sign;
+use std::convert::TryInto;
 
 //
 // Types
@@ -28,6 +29,8 @@ pub enum DecodingError {
     },
     #[error("failed to decode payload into a UTF-8 string")]
     DecodingFailure(#[from] io::Error),
+    #[error("failed to decode a compound term data type")]
+    CompoundTypeDecodingFailure(),
     #[error("format version is unsupported")]
     UnsupportedVersion {
         version: u8
@@ -44,7 +47,8 @@ pub enum ErlangExtTerm {
     BigInteger(BigInt),
     Float(f64),
     BitBinary(Vec<u8>, u8),
-    Binary(Vec<u8>)
+    Binary(Vec<u8>),
+    ErlPid(ErlPid)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -63,6 +67,14 @@ pub struct BitBinary {
     pub num_of_trailing_bits: u8
 }
 
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ErlPid {
+    pub node: Atom,
+    pub id: u32,
+    pub serial: u32,
+    pub creation: u32
+}
+
 //
 // Decoding
 //
@@ -70,6 +82,17 @@ pub struct BitBinary {
 impl ErlangExtTerm {
     pub fn decode(reader: Box<dyn io::Read>) -> DecodingResult {
         return Decoder::new(reader).decode();
+    }
+}
+
+impl TryInto<Atom> for ErlangExtTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<Atom, Self::Error> {
+        match self {
+            ErlangExtTerm::Atom(val) => Ok(Atom {name: val}),
+            _ => Err(())
+        }
     }
 }
 
@@ -110,8 +133,18 @@ impl Decoder {
             constants::NEW_FLOAT_EXT => self.decode_float(),
             constants::BINARY_EXT => self.decode_binary(),
             constants::BIT_BINARY_EXT => self.decode_bit_binary(),
+            constants::NEW_PID_EXT => self.decode_pid(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
+    }
+
+    fn read_next_term(&mut self) -> DecodingResult {
+        let term_tag = self.reader.read_u8()?;
+        return self.decode_tagged_with(term_tag);
+    }
+
+    fn read_uint32(&mut self) -> Result<u32, std::io::Error> {
+        return self.reader.read_u32::<BigEndian>();
     }
 
     // Legacy atom encoding format, assumes Latin1 (Windows-1252) encoding
@@ -235,6 +268,23 @@ impl Decoder {
             input[n - 1] = tail;
         }
         Ok(ErlangExtTerm::BitBinary(input, tail_len))
+    }
+
+    fn decode_pid(&mut self) -> DecodingResult {
+        let node = self.read_next_term()?;
+        match node.try_into() {
+            Ok(val) => {
+                let id = self.read_uint32()?;
+                let serial = self.read_uint32()?;
+                let creation = self.read_uint32()?;
+
+                Ok(ErlangExtTerm::ErlPid(ErlPid {
+                    node: val,
+                    id, serial, creation
+                }))
+            },
+            _ => Err(DecodingError::CompoundTypeDecodingFailure())
+        }
     }
 }
 
