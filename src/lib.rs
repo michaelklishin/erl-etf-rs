@@ -48,7 +48,9 @@ pub enum ErlangExtTerm {
     Float(f64),
     BitBinary(Vec<u8>, u8),
     Binary(Vec<u8>),
-    ErlPid(ErlPid)
+    ErlPid(ErlPid),
+    ErlV3Port(ErlV3Port),
+    ErlV4Port(ErlV4Port)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -72,6 +74,20 @@ pub struct ErlPid {
     pub node: Atom,
     pub id: u32,
     pub serial: u32,
+    pub creation: u32
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ErlV3Port {
+    pub node: Atom,
+    pub id: u32,
+    pub creation: u32
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ErlV4Port {
+    pub node: Atom,
+    pub id: u64,
     pub creation: u32
 }
 
@@ -134,6 +150,8 @@ impl Decoder {
             constants::BINARY_EXT => self.decode_binary(),
             constants::BIT_BINARY_EXT => self.decode_bit_binary(),
             constants::NEW_PID_EXT => self.decode_pid(),
+            constants::NEW_PORT_EXT => self.decode_v3_port(),
+            constants::V4_PORT_EXT => self.decode_v4_port(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -145,6 +163,10 @@ impl Decoder {
 
     fn read_uint32(&mut self) -> Result<u32, std::io::Error> {
         return self.reader.read_u32::<BigEndian>();
+    }
+
+    fn read_uint64(&mut self) -> Result<u64, std::io::Error> {
+        return self.reader.read_u64::<BigEndian>();
     }
 
     // Legacy atom encoding format, assumes Latin1 (Windows-1252) encoding
@@ -272,7 +294,7 @@ impl Decoder {
 
     fn decode_pid(&mut self) -> DecodingResult {
         let node = self.read_next_term()?;
-        match node.try_into() {
+        match TryInto::<Atom>::try_into(node) {
             Ok(val) => {
                 let id = self.read_uint32()?;
                 let serial = self.read_uint32()?;
@@ -281,6 +303,38 @@ impl Decoder {
                 Ok(ErlangExtTerm::ErlPid(ErlPid {
                     node: val,
                     id, serial, creation
+                }))
+            },
+            _ => Err(DecodingError::CompoundTypeDecodingFailure())
+        }
+    }
+
+    fn decode_v3_port(&mut self) -> DecodingResult {
+        let node = self.read_next_term()?;
+        match TryInto::<Atom>::try_into(node) {
+            Ok(val) => {
+                let id = self.read_uint32()?;
+                let creation = self.read_uint32()?;
+
+                Ok(ErlangExtTerm::ErlV3Port(ErlV3Port {
+                    node: val,
+                    id, creation
+                }))
+            },
+            _ => Err(DecodingError::CompoundTypeDecodingFailure())
+        }
+    }
+
+    fn decode_v4_port(&mut self) -> DecodingResult {
+        let node = self.read_next_term()?;
+        match TryInto::<Atom>::try_into(node) {
+            Ok(val) => {
+                let id = self.read_uint64()?;
+                let creation = self.read_uint32()?;
+
+                Ok(ErlangExtTerm::ErlV4Port(ErlV4Port {
+                    node: val,
+                    id, creation
                 }))
             },
             _ => Err(DecodingError::CompoundTypeDecodingFailure())

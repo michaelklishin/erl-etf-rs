@@ -29,4 +29,7 @@ pub(crate) const BIT_BINARY_EXT: u8 = 77;
 pub(crate) const BINARY_EXT: u8 = 109;
 // Section 12.12
 pub(crate) const NEW_PID_EXT: u8 = 88;
-
+// Section 12.9
+pub(crate) const NEW_PORT_EXT: u8 = 89;
+// Section 12.10
+pub(crate) const V4_PORT_EXT: u8 = 120;
