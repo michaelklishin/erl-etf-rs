@@ -188,23 +188,23 @@ impl Decoder {
         return self.decode_tagged_with(term_tag);
     }
 
-    fn read_uint8(&mut self) -> Result<u8, std::io::Error> {
+    fn read_u8(&mut self) -> Result<u8, std::io::Error> {
         return self.reader.read_u8();
     }
 
-    fn read_uint16(&mut self) -> Result<u16, std::io::Error> {
+    fn read_u16(&mut self) -> Result<u16, std::io::Error> {
         return self.reader.read_u16::<BigEndian>();
     }
 
-    fn read_uint32(&mut self) -> Result<u32, std::io::Error> {
+    fn read_u32(&mut self) -> Result<u32, std::io::Error> {
         return self.reader.read_u32::<BigEndian>();
     }
 
-    fn read_int32(&mut self) -> Result<i32, std::io::Error> {
+    fn read_i32(&mut self) -> Result<i32, std::io::Error> {
         return self.reader.read_i32::<BigEndian>();
     }
 
-    fn read_uint64(&mut self) -> Result<u64, std::io::Error> {
+    fn read_u64(&mut self) -> Result<u64, std::io::Error> {
         return self.reader.read_u64::<BigEndian>();
     }
 
@@ -214,7 +214,7 @@ impl Decoder {
 
     // Legacy atom encoding format, assumes Latin1 (Windows-1252) encoding
     fn decode_atom_ext(&mut self) -> DecodingResult {
-        let length = self.read_uint16()? as usize;
+        let length = self.read_u16()? as usize;
         self.buffer.resize(length, 0);
         self.reader.read_exact(&mut self.buffer)?;
 
@@ -229,7 +229,7 @@ impl Decoder {
 
     // Modern atom encoding format, assumes UTF-8 encoding
     fn decode_atom_utf8_ext(&mut self) -> DecodingResult {
-        let length = self.read_uint16()? as usize;
+        let length = self.read_u16()? as usize;
         self.buffer.resize(length, 0);
         self.reader.read_exact(&mut self.buffer)?;
 
@@ -268,7 +268,7 @@ impl Decoder {
     }
 
     fn decode_integer(&mut self) -> DecodingResult {
-        match self.read_int32() {
+        match self.read_i32() {
             Ok(i) => Ok(ErlangExtTerm::Integer(i)),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
@@ -278,7 +278,7 @@ impl Decoder {
     }
 
     fn decode_small_big_integer(&mut self) -> DecodingResult {
-        let n = self.read_uint8()? as usize;
+        let n = self.read_u8()? as usize;
         let sign = self.reader.read_u8()?;
 
         self.buffer.resize(n, 0);
@@ -291,7 +291,7 @@ impl Decoder {
     }
 
     fn decode_large_big_integer(&mut self) -> DecodingResult {
-        let n = self.read_uint32()? as usize;
+        let n = self.read_u32()? as usize;
         let sign = self.reader.read_u8()?;
 
         self.buffer.resize(n, 0);
@@ -314,7 +314,7 @@ impl Decoder {
     }
 
     fn decode_binary(&mut self) -> DecodingResult {
-        let n = self.read_uint32()? as usize;
+        let n = self.read_u32()? as usize;
         let mut input = vec![0; n];
 
         self.reader.read_exact(&mut input)?;
@@ -322,7 +322,7 @@ impl Decoder {
     }
 
     fn decode_bit_binary(&mut self) -> DecodingResult {
-        let n = self.read_uint32()? as usize;
+        let n = self.read_u32()? as usize;
         let tail_len = self.reader.read_u8()?;
 
         let mut input = vec![0; n];
@@ -339,9 +339,9 @@ impl Decoder {
         let node = self.read_next_term()?;
         match TryInto::<Atom>::try_into(node) {
             Ok(val) => {
-                let id = self.read_uint32()?;
-                let serial = self.read_uint32()?;
-                let creation = self.read_uint32()?;
+                let id = self.read_u32()?;
+                let serial = self.read_u32()?;
+                let creation = self.read_u32()?;
 
                 Ok(ErlangExtTerm::ErlPid(ErlPid {
                     node: val,
@@ -358,8 +358,8 @@ impl Decoder {
         let node = self.read_next_term()?;
         match TryInto::<Atom>::try_into(node) {
             Ok(val) => {
-                let id = self.read_uint32()?;
-                let creation = self.read_uint32()?;
+                let id = self.read_u32()?;
+                let creation = self.read_u32()?;
 
                 Ok(ErlangExtTerm::ErlV3Port(ErlV3Port {
                     node: val,
@@ -375,8 +375,8 @@ impl Decoder {
         let node = self.read_next_term()?;
         match TryInto::<Atom>::try_into(node) {
             Ok(val) => {
-                let id = self.read_uint64()?;
-                let creation = self.read_uint32()?;
+                let id = self.read_u64()?;
+                let creation = self.read_u32()?;
 
                 Ok(ErlangExtTerm::ErlV4Port(ErlV4Port {
                     node: val,
@@ -389,7 +389,7 @@ impl Decoder {
     }
 
     fn decode_small_tuple(&mut self) -> DecodingResult {
-        let n = self.read_uint8()? as usize;
+        let n = self.read_u8()? as usize;
         let mut items = Vec::with_capacity(n);
 
         for _i in 0..n {
@@ -403,7 +403,7 @@ impl Decoder {
     }
 
     fn decode_large_tuple(&mut self) -> DecodingResult {
-        let n = self.read_uint32()? as usize;
+        let n = self.read_u32()? as usize;
         let mut items = Vec::with_capacity(n);
 
         for _i in 0..n {
