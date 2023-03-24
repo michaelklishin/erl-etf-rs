@@ -33,3 +33,7 @@ pub(crate) const NEW_PID_EXT: u8 = 88;
 pub(crate) const NEW_PORT_EXT: u8 = 89;
 // Section 12.10
 pub(crate) const V4_PORT_EXT: u8 = 120;
+// Section 12.13
+pub(crate) const SMALL_TUPLE_EXT: u8 = 104;
+// Section 12.14
+pub(crate) const LARGE_TUPLE_EXT: u8 = 105;
