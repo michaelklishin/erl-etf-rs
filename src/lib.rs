@@ -136,6 +136,16 @@ impl TryInto<Atom> for ErlangExtTerm {
         }
     }
 }
+impl TryInto<Tuple> for ErlangExtTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<Tuple, Self::Error> {
+        match self {
+            ErlangExtTerm::Tuple(val) => Ok(Tuple { elements: val.elements }),
+            _ => Err(()),
+        }
+    }
+}
 
 pub struct Decoder {
     reader: Box<dyn io::Read>,
@@ -393,7 +403,7 @@ impl Decoder {
         let mut items = Vec::with_capacity(n);
 
         for _i in 0..n {
-            match self.decode() {
+            match self.read_next_term() {
                 Ok(term) => items.push(term),
                 Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure()),
             }
@@ -407,7 +417,7 @@ impl Decoder {
         let mut items = Vec::with_capacity(n);
 
         for _i in 0..n {
-            match self.decode() {
+            match self.read_next_term() {
                 Ok(term) => items.push(term),
                 Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure()),
             }
