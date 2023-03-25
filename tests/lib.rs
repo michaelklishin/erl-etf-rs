@@ -221,6 +221,25 @@ fn decode_small_tuple_of_integers() {
 }
 
 #[test]
+fn decode_small_tuple_of_binaries() {
+    // term_to_binary({<<"aa">>, <<"bbb">>, <<"c">>, <<"dddd">>}).
+    // <<131,104,4,109,0,0,0,2,97,97,109,0,0,0,3,98,98,98,109,0,...>>
+    let input1 = binary_data(&[
+        131,104,4,109,0,0,0,2,97,97,109,0,0,0,3,98,98,98,109,0,0,0,1,99,109,0,0,0,4,100,100,100,100
+    ]);
+    let res1 = ErlangExtTerm::decode(input1).unwrap();
+    assert_eq!(tuple_of_binaries(vec!["aa", "bbb", "c", "dddd"]), res1);
+
+    // term_to_binary({<<"erlang">>, <<"rust">>}).
+    // <<131,104,2,109,0,0,0,6,101,114,108,97,110,103,109,0,0,0,4,114,117,115,116>>
+    let input2 = binary_data(&[
+        131,104,2,109,0,0,0,6,101,114,108,97,110,103,109,0,0,0,4,114,117,115,116
+    ]);
+    let res2 = ErlangExtTerm::decode(input2).unwrap();
+    assert_eq!(tuple_of_binaries(vec!["erlang", "rust"]), res2);
+}
+
+#[test]
 fn decode_large_tuple_of_integers() {
     // term_to_binary(…)
     // <<131,105,0,0,3,232,97,0,97,1,97,2,97,3,97,4,97,5,97,6,97,...>>
@@ -452,6 +471,14 @@ fn tuple_of_i32(vec: Vec<i32>) -> ErlangExtTerm {
     let xs = vec
         .iter()
         .map(|&i| ErlangExtTerm::Integer(i))
+        .collect::<Vec<ErlangExtTerm>>();
+    ErlangExtTerm::Tuple(Tuple { elements: xs })
+}
+
+fn tuple_of_binaries(vec: Vec<&str>) -> ErlangExtTerm {
+    let xs = vec
+        .iter()
+        .map(|&i| ErlangExtTerm::Binary(i.as_bytes().to_vec()))
         .collect::<Vec<ErlangExtTerm>>();
     ErlangExtTerm::Tuple(Tuple { elements: xs })
 }
