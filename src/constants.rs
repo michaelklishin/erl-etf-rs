@@ -37,3 +37,5 @@ pub(crate) const V4_PORT_EXT: u8 = 120;
 pub(crate) const SMALL_TUPLE_EXT: u8 = 104;
 // Section 12.14
 pub(crate) const LARGE_TUPLE_EXT: u8 = 105;
+// Section 12.16
+pub(crate) const NIL_EXT: u8 = 106;

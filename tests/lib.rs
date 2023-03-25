@@ -398,6 +398,15 @@ fn decode_large_tuple_of_integers() {
     assert_eq!(&ErlangExtTerm::Integer(999), t1.elements.last().unwrap());
 }
 
+#[test]
+fn decode_an_empty_list() {
+    // term_to_binary([]).
+    // <<131,106>>
+    let input = binary_data(&[131,106]);
+    let res = ErlangExtTerm::decode(input).unwrap();
+    assert_eq!(empty_list(), res);
+}
+
 //
 // Helpers
 //
@@ -473,4 +482,8 @@ fn tuple_of_binaries(vec: Vec<&str>) -> ErlangExtTerm {
         .map(|&i| ErlangExtTerm::Binary(i.as_bytes().to_vec()))
         .collect::<Vec<ErlangExtTerm>>();
     ErlangExtTerm::Tuple(Tuple { elements: xs })
+}
+
+fn empty_list() -> ErlangExtTerm {
+    return ErlangExtTerm::List(List::nil());
 }

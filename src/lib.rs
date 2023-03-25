@@ -189,6 +189,7 @@ impl Decoder {
             constants::V4_PORT_EXT => self.decode_v4_port(),
             constants::SMALL_TUPLE_EXT => self.decode_small_tuple(),
             constants::LARGE_TUPLE_EXT => self.decode_large_tuple(),
+            constants::NIL_EXT => self.decode_nil(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -424,6 +425,10 @@ impl Decoder {
         }
 
         Ok(ErlangExtTerm::Tuple(Tuple { elements: items }))
+    }
+
+    fn decode_nil(&mut self) -> DecodingResult {
+        return Ok(ErlangExtTerm::List(List::nil()));
     }
 }
 
