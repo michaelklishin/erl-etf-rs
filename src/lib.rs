@@ -16,7 +16,7 @@ use thiserror::Error;
 // Types
 //
 
-pub type DecodingResult = Result<ErlangExtTerm, DecodingError>;
+pub type DecodingResult = Result<ErlTerm, DecodingError>;
 
 #[derive(Error, Debug)]
 pub enum DecodingError {
@@ -35,7 +35,7 @@ pub enum DecodingError {
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
-pub enum ErlangExtTerm {
+pub enum ErlTerm {
     Atom(String),
     SmallInteger(u8),
     Integer(i32),
@@ -43,9 +43,9 @@ pub enum ErlangExtTerm {
     Float(OrderedFloat<f64>),
     BitBinary(Vec<u8>, u8),
     Binary(Vec<u8>),
-    ErlPid(ErlPid),
-    ErlV3Port(ErlV3Port),
-    ErlV4Port(ErlV4Port),
+    Pid(ErlPid),
+    V3Port(ErlV3Port),
+    V4Port(ErlV4Port),
     Tuple(Tuple),
     List(List),
 }
@@ -90,7 +90,7 @@ pub struct ErlV4Port {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct Tuple {
-    pub elements: Vec<ErlangExtTerm>,
+    pub elements: Vec<ErlTerm>,
 }
 impl Tuple {
     pub fn empty() -> Self {
@@ -102,7 +102,7 @@ impl Tuple {
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
 pub struct List {
-    pub elements: Vec<ErlangExtTerm>,
+    pub elements: Vec<ErlTerm>,
 }
 impl List {
     pub fn nil() -> Self {
@@ -120,28 +120,28 @@ impl List {
 // Decoding
 //
 
-impl ErlangExtTerm {
+impl ErlTerm {
     pub fn decode(reader: Box<dyn io::Read>) -> DecodingResult {
         return Decoder::new(reader).decode();
     }
 }
 
-impl TryInto<Atom> for ErlangExtTerm {
+impl TryInto<Atom> for ErlTerm {
     type Error = ();
 
     fn try_into(self) -> Result<Atom, Self::Error> {
         match self {
-            ErlangExtTerm::Atom(val) => Ok(Atom { name: val }),
+            ErlTerm::Atom(val) => Ok(Atom { name: val }),
             _ => Err(()),
         }
     }
 }
-impl TryInto<Tuple> for ErlangExtTerm {
+impl TryInto<Tuple> for ErlTerm {
     type Error = ();
 
     fn try_into(self) -> Result<Tuple, Self::Error> {
         match self {
-            ErlangExtTerm::Tuple(val) => Ok(Tuple { elements: val.elements }),
+            ErlTerm::Tuple(val) => Ok(Tuple { elements: val.elements }),
             _ => Err(()),
         }
     }
@@ -234,7 +234,7 @@ impl Decoder {
             let e = io::Error::new(io::ErrorKind::InvalidData, s.to_string());
             return Err(DecodingError::DecodingFailure(e));
         } else {
-            return Ok(ErlangExtTerm::Atom(s.to_string()));
+            return Ok(ErlTerm::Atom(s.to_string()));
         }
     }
 
@@ -245,7 +245,7 @@ impl Decoder {
         self.reader.read_exact(&mut self.buffer)?;
 
         match str::from_utf8(&self.buffer) {
-            Ok(s) => Ok(ErlangExtTerm::Atom(s.to_string())),
+            Ok(s) => Ok(ErlTerm::Atom(s.to_string())),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
                 Err(DecodingError::DecodingFailure(io_e))
@@ -260,7 +260,7 @@ impl Decoder {
         self.reader.read_exact(&mut self.buffer)?;
 
         match str::from_utf8(&self.buffer) {
-            Ok(s) => Ok(ErlangExtTerm::Atom(s.to_string())),
+            Ok(s) => Ok(ErlTerm::Atom(s.to_string())),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
                 Err(DecodingError::DecodingFailure(io_e))
@@ -270,7 +270,7 @@ impl Decoder {
 
     fn decode_small_integer(&mut self) -> DecodingResult {
         match self.reader.read_u8() {
-            Ok(i) => Ok(ErlangExtTerm::SmallInteger(i)),
+            Ok(i) => Ok(ErlTerm::SmallInteger(i)),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
                 Err(DecodingError::DecodingFailure(io_e))
@@ -280,7 +280,7 @@ impl Decoder {
 
     fn decode_integer(&mut self) -> DecodingResult {
         match self.read_i32() {
-            Ok(i) => Ok(ErlangExtTerm::Integer(i)),
+            Ok(i) => Ok(ErlTerm::Integer(i)),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
                 Err(DecodingError::DecodingFailure(io_e))
@@ -298,7 +298,7 @@ impl Decoder {
         // section 12.18:
         // The digits are stored with the least significant byte stored first.
         let val = BigInt::from_bytes_le(to_sign(sign)?, &self.buffer);
-        Ok(ErlangExtTerm::BigInteger(val))
+        Ok(ErlTerm::BigInteger(val))
     }
 
     fn decode_large_big_integer(&mut self) -> DecodingResult {
@@ -311,12 +311,12 @@ impl Decoder {
         // section 12.18:
         // The digits are stored with the least significant byte stored first.
         let val = BigInt::from_bytes_le(to_sign(sign)?, &self.buffer);
-        Ok(ErlangExtTerm::BigInteger(val))
+        Ok(ErlTerm::BigInteger(val))
     }
 
     fn decode_float(&mut self) -> DecodingResult {
         match self.read_f64() {
-            Ok(i) => Ok(ErlangExtTerm::Float(OrderedFloat::<f64>(i as f64))),
+            Ok(i) => Ok(ErlTerm::Float(OrderedFloat::<f64>(i as f64))),
             Err(e) => {
                 let io_e = io::Error::new(io::ErrorKind::InvalidData, e.to_string());
                 Err(DecodingError::DecodingFailure(io_e))
@@ -329,7 +329,7 @@ impl Decoder {
         let mut input = vec![0; n];
 
         self.reader.read_exact(&mut input)?;
-        Ok(ErlangExtTerm::Binary(input))
+        Ok(ErlTerm::Binary(input))
     }
 
     fn decode_bit_binary(&mut self) -> DecodingResult {
@@ -343,7 +343,7 @@ impl Decoder {
             let tail = input[n - 1] >> shift_by;
             input[n - 1] = tail;
         }
-        Ok(ErlangExtTerm::BitBinary(input, tail_len))
+        Ok(ErlTerm::BitBinary(input, tail_len))
     }
 
     fn decode_pid(&mut self) -> DecodingResult {
@@ -354,7 +354,7 @@ impl Decoder {
                 let serial = self.read_u32()?;
                 let creation = self.read_u32()?;
 
-                Ok(ErlangExtTerm::ErlPid(ErlPid {
+                Ok(ErlTerm::Pid(ErlPid {
                     node: val,
                     id,
                     serial,
@@ -372,7 +372,7 @@ impl Decoder {
                 let id = self.read_u32()?;
                 let creation = self.read_u32()?;
 
-                Ok(ErlangExtTerm::ErlV3Port(ErlV3Port {
+                Ok(ErlTerm::V3Port(ErlV3Port {
                     node: val,
                     id,
                     creation,
@@ -389,7 +389,7 @@ impl Decoder {
                 let id = self.read_u64()?;
                 let creation = self.read_u32()?;
 
-                Ok(ErlangExtTerm::ErlV4Port(ErlV4Port {
+                Ok(ErlTerm::V4Port(ErlV4Port {
                     node: val,
                     id,
                     creation,
@@ -410,7 +410,7 @@ impl Decoder {
             }
         }
 
-        Ok(ErlangExtTerm::Tuple(Tuple { elements: items }))
+        Ok(ErlTerm::Tuple(Tuple { elements: items }))
     }
 
     fn decode_large_tuple(&mut self) -> DecodingResult {
@@ -424,11 +424,11 @@ impl Decoder {
             }
         }
 
-        Ok(ErlangExtTerm::Tuple(Tuple { elements: items }))
+        Ok(ErlTerm::Tuple(Tuple { elements: items }))
     }
 
     fn decode_nil(&mut self) -> DecodingResult {
-        return Ok(ErlangExtTerm::List(List::nil()));
+        return Ok(ErlTerm::List(List::nil()));
     }
 }
 
@@ -443,18 +443,18 @@ pub fn to_sign(i: u8) -> io::Result<Sign> {
     }
 }
 
-impl From<Atom> for ErlangExtTerm {
+impl From<Atom> for ErlTerm {
     fn from(val: Atom) -> Self {
-        ErlangExtTerm::Atom(val.name)
+        ErlTerm::Atom(val.name)
     }
 }
-impl From<String> for ErlangExtTerm {
+impl From<String> for ErlTerm {
     fn from(val: String) -> Self {
-        ErlangExtTerm::Atom(val)
+        ErlTerm::Atom(val)
     }
 }
-impl From<&str> for ErlangExtTerm {
+impl From<&str> for ErlTerm {
     fn from(val: &str) -> Self {
-        ErlangExtTerm::Atom(val.to_string())
+        ErlTerm::Atom(val.to_string())
     }
 }
