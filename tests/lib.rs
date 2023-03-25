@@ -467,14 +467,6 @@ fn tuple_of_u8(vec: Vec<u8>) -> ErlangExtTerm {
     ErlangExtTerm::Tuple(Tuple { elements: xs })
 }
 
-fn tuple_of_i32(vec: Vec<i32>) -> ErlangExtTerm {
-    let xs = vec
-        .iter()
-        .map(|&i| ErlangExtTerm::Integer(i))
-        .collect::<Vec<ErlangExtTerm>>();
-    ErlangExtTerm::Tuple(Tuple { elements: xs })
-}
-
 fn tuple_of_binaries(vec: Vec<&str>) -> ErlangExtTerm {
     let xs = vec
         .iter()
