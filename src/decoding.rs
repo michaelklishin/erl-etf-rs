@@ -50,6 +50,7 @@ impl Decoder {
             constants::SMALL_TUPLE_EXT => self.decode_small_tuple(),
             constants::LARGE_TUPLE_EXT => self.decode_large_tuple(),
             constants::NIL_EXT => self.decode_nil(),
+            constants::LIST_EXT => self.decode_list(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -280,11 +281,25 @@ impl Decoder {
         for _i in 0..n {
             match self.read_next_term() {
                 Ok(term) => items.push(term),
-                Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure()),
+                Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure())
             }
         }
 
         Ok(ErlTerm::Tuple(Tuple { elements: items }))
+    }
+
+    fn decode_list(&mut self) -> DecodingResult {
+        let n = self.read_u32()? as usize;
+        let mut items = Vec::with_capacity(n);
+
+        for _i in 0..n {
+            match self.read_next_term() {
+                Ok(term) => items.push(term),
+                Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure())
+            }
+        }
+
+        Ok(ErlTerm::List(List { elements: items }))
     }
 
     fn decode_nil(&mut self) -> DecodingResult {

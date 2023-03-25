@@ -407,6 +407,19 @@ fn decode_an_empty_list() {
     assert_eq!(empty_list(), res);
 }
 
+#[test]
+fn decode_list_of_integers_of_various_size() {
+    // term_to_binary([1, 2, 3, 99999999]).
+    // <<131,107,0,4,1,2,3,4>>
+    let input = binary_data(&[131,108,0,0,0,4,97,1,97,2,97,3,98,5,245,224,255,106]);
+    let res = ErlTerm::decode(input).unwrap();
+    let term = TryInto::<List>::try_into(res).unwrap();
+
+    assert_eq!(4, term.elements.len());
+    assert_eq!(&ErlTerm::SmallInteger(1), term.elements.first().unwrap());
+    assert_eq!(&ErlTerm::Integer(99999999), term.elements.last().unwrap());
+}
+
 //
 // Helpers
 //
@@ -474,6 +487,14 @@ fn tuple_of_u8(vec: Vec<u8>) -> ErlTerm {
         .map(|&i| ErlTerm::SmallInteger(i))
         .collect::<Vec<ErlTerm>>();
     ErlTerm::Tuple(Tuple { elements: xs })
+}
+
+fn list_of_u8(vec: Vec<u8>) -> ErlTerm {
+    let xs = vec
+        .iter()
+        .map(|&i| ErlTerm::SmallInteger(i))
+        .collect::<Vec<ErlTerm>>();
+    ErlTerm::List(List { elements: xs })
 }
 
 fn tuple_of_binaries(vec: Vec<&str>) -> ErlTerm {

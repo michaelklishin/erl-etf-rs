@@ -24,6 +24,16 @@ impl TryInto<Tuple> for ErlTerm {
         }
     }
 }
+impl TryInto<List> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<List, Self::Error> {
+        match self {
+            ErlTerm::List(val) => Ok(List { elements: val.elements }),
+            _ => Err(()),
+        }
+    }
+}
 
 
 //

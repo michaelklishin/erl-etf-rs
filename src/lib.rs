@@ -49,7 +49,7 @@ pub enum ErlTerm {
     V3Port(ErlV3Port),
     V4Port(ErlV4Port),
     Tuple(Tuple),
-    List(List),
+    List(List)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
