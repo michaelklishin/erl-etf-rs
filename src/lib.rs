@@ -49,7 +49,8 @@ pub enum ErlTerm {
     V3Port(ErlV3Port),
     V4Port(ErlV4Port),
     Tuple(Tuple),
-    List(List)
+    List(List),
+    Ref(Ref)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -116,6 +117,14 @@ impl List {
             elements: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct Ref {
+    pub node: Atom,
+    pub creation: u32,
+    // an opaque sequence of bytes
+    pub id: Vec<u32>
 }
 
 //

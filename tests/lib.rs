@@ -420,6 +420,17 @@ fn decode_list_of_integers_of_various_size() {
     assert_eq!(&ErlTerm::Integer(99999999), term.elements.last().unwrap());
 }
 
+#[test]
+fn decode_ref() {
+    // term_to_binary(make_ref()).
+    // <<131,90,0,3,100,0,13,110,111,110,111,100,101,64,110,111,104,111,115,116,0,0,0,0,0,2,23,123,77,156,0,1,94,82,239,55>>
+    let input = binary_data(&[
+        131,90,0,3,100,0,13,110,111,110,111,100,101,64,110,111,104,111,115,116,0,0,0,0,0,2,23,123,77,156,0,1,94,82,239,55
+    ]);
+    let res = ErlTerm::decode(input).unwrap();
+    assert_eq!(erl_ref(atom("nonode@nohost"), 0, vec![137083, 1302069249, 1582493495]), res);
+}
+
 //
 // Helpers
 //
@@ -462,6 +473,14 @@ fn erl_pid(node: ErlTerm, id: u32, serial: u32, creation: u32) -> ErlTerm {
         id,
         serial,
         creation,
+    })
+}
+
+fn erl_ref(node: ErlTerm, creation: u32, id: Vec<u32>) -> ErlTerm {
+    ErlTerm::Ref(Ref {
+        node: TryInto::<Atom>::try_into(node).unwrap(),
+        creation,
+        id
     })
 }
 

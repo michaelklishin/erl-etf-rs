@@ -51,6 +51,7 @@ impl Decoder {
             constants::LARGE_TUPLE_EXT => self.decode_large_tuple(),
             constants::NIL_EXT => self.decode_nil(),
             constants::LIST_EXT => self.decode_list(),
+            constants::NEWER_REFERENCE_EXT => self.decode_newer_reference(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -304,5 +305,26 @@ impl Decoder {
 
     fn decode_nil(&mut self) -> DecodingResult {
         return Ok(ErlTerm::List(List::nil()));
+    }
+
+    fn decode_newer_reference(&mut self) -> Result<ErlTerm, DecodingError> {
+        let arity = self.read_u16()? as usize;
+        let node = self.read_next_term()?;
+        match TryInto::<Atom>::try_into(node) {
+            Ok(atom) => {
+                let creation = self.read_u32()?;
+                // remaining ref ID bytes
+                let mut tail = Vec::<u32>::with_capacity(arity);
+
+                for _i in 0..arity {
+                    let j = self.read_u32()?;
+                    tail.push(j);
+                }
+
+                return Ok(ErlTerm::Ref(Ref { node: atom, creation, id: tail }));
+            },
+            Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure())
+
+        }
     }
 }

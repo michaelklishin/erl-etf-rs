@@ -41,3 +41,5 @@ pub(crate) const LARGE_TUPLE_EXT: u8 = 105;
 pub(crate) const NIL_EXT: u8 = 106;
 // Section 12.18
 pub(crate) const LIST_EXT: u8 = 108;
+// Section 12.24
+pub(crate) const NEWER_REFERENCE_EXT: u8 = 90;
