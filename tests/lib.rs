@@ -431,6 +431,17 @@ fn decode_ref() {
     assert_eq!(erl_ref(atom("nonode@nohost"), 0, vec![137083, 1302069249, 1582493495]), res);
 }
 
+#[test]
+fn decode_external_fun() {
+    // term_to_binary(fun erlang:'+'/2)
+    // <<131,113,100,0,6,101,114,108,97,110,103,100,0,1,43,97,2>>
+    let input = binary_data(&[
+        131,113,100,0,6,101,114,108,97,110,103,100,0,1,43,97,2
+    ]);
+    let res = ErlTerm::decode(input).unwrap();
+    assert_eq!(erl_external_fun(atom("erlang"), atom("+"), 2), res);
+}
+
 //
 // Helpers
 //
@@ -526,4 +537,12 @@ fn tuple_of_binaries(vec: Vec<&str>) -> ErlTerm {
 
 fn empty_list() -> ErlTerm {
     return ErlTerm::List(List::nil());
+}
+
+fn erl_external_fun(mod_name: ErlTerm, fun_name: ErlTerm, arity: u8) -> ErlTerm {
+    return ErlTerm::ExternalFun(ExternalFun {
+        module: TryInto::<Atom>::try_into(mod_name).unwrap(),
+        function_name: TryInto::<Atom>::try_into(fun_name).unwrap(),
+        arity: arity
+    })
 }

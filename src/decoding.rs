@@ -52,6 +52,7 @@ impl Decoder {
             constants::NIL_EXT => self.decode_nil(),
             constants::LIST_EXT => self.decode_list(),
             constants::NEWER_REFERENCE_EXT => self.decode_newer_reference(),
+            constants::FUN_EXPORT_EXT => self.decode_fun_export(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -307,7 +308,7 @@ impl Decoder {
         return Ok(ErlTerm::List(List::nil()));
     }
 
-    fn decode_newer_reference(&mut self) -> Result<ErlTerm, DecodingError> {
+    fn decode_newer_reference(&mut self) -> DecodingResult {
         let arity = self.read_u16()? as usize;
         let node = self.read_next_term()?;
         match TryInto::<Atom>::try_into(node) {
@@ -326,5 +327,24 @@ impl Decoder {
             Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure())
 
         }
+    }
+
+    fn decode_fun_export(&mut self) -> DecodingResult {
+        let module_term = self.read_next_term()?;
+        let module_atom = TryInto::<Atom>::try_into(module_term).unwrap();
+
+        let fn_name_term = self.read_next_term()?;
+        let fn_name_atom = TryInto::<Atom>::try_into(fn_name_term).unwrap();
+
+        let arity_term = self.read_next_term()?;
+        let arity = TryInto::<u8>::try_into(arity_term).unwrap();
+
+        Ok(ErlTerm::ExternalFun(
+            ExternalFun {
+                module: module_atom,
+                function_name: fn_name_atom,
+                arity
+            }
+        ))
     }
 }

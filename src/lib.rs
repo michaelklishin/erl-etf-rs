@@ -50,7 +50,8 @@ pub enum ErlTerm {
     V4Port(ErlV4Port),
     Tuple(Tuple),
     List(List),
-    Ref(Ref)
+    Ref(Ref),
+    ExternalFun(ExternalFun)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -125,6 +126,13 @@ pub struct Ref {
     pub creation: u32,
     // an opaque sequence of bytes
     pub id: Vec<u32>
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ExternalFun {
+    pub module: Atom,
+    pub function_name: Atom,
+    pub arity: u8
 }
 
 //

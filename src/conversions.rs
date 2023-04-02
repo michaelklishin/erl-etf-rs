@@ -14,6 +14,17 @@ impl TryInto<Atom> for ErlTerm {
         }
     }
 }
+impl TryInto<u8> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<u8, Self::Error> {
+        match self {
+            ErlTerm::SmallInteger(val) => Ok(val),
+            ErlTerm::Integer(val) => Ok(val as u8),
+            _ => Err(()),
+        }
+    }
+}
 impl TryInto<Tuple> for ErlTerm {
     type Error = ();
 

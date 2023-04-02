@@ -43,3 +43,7 @@ pub(crate) const NIL_EXT: u8 = 106;
 pub(crate) const LIST_EXT: u8 = 108;
 // Section 12.24
 pub(crate) const NEWER_REFERENCE_EXT: u8 = 90;
+// Section 12.26
+pub(crate) const NEW_FUN_EXT: u8 = 112;
+// Section 12.27
+pub(crate) const FUN_EXPORT_EXT: u8 = 113;
