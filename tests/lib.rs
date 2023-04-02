@@ -413,11 +413,26 @@ fn decode_list_of_integers_of_various_size() {
     // <<131,107,0,4,1,2,3,4>>
     let input = binary_data(&[131,108,0,0,0,4,97,1,97,2,97,3,98,5,245,224,255,106]);
     let res = ErlTerm::decode(input).unwrap();
-    let term = TryInto::<List>::try_into(res).unwrap();
+    let list: List = res.try_into().unwrap();
 
-    assert_eq!(4, term.elements.len());
-    assert_eq!(&ErlTerm::SmallInteger(1), term.elements.first().unwrap());
-    assert_eq!(&ErlTerm::Integer(99999999), term.elements.last().unwrap());
+    assert_eq!(4, list.elements.len());
+    assert_eq!(&ErlTerm::SmallInteger(1), list.elements.first().unwrap());
+    assert_eq!(&ErlTerm::Integer(99999999), list.elements.last().unwrap());
+}
+
+#[test]
+fn decode_improper_list_of_integers_of_various_size() {
+    // term_to_binary([1, 2, 3, 99999999 | 5])
+    // <<131,108,0,0,0,4,97,1,97,2,97,3,98,5,245,224,255,97,5>>
+    let input = binary_data(&[131,108,0,0,0,4,97,1,97,2,97,3,98,5,245,224,255,97,5]);
+    let res = ErlTerm::decode(input).unwrap();
+    let list: ImproperList = res.try_into().unwrap();
+
+    assert_eq!(4, list.elements.len());
+    assert_eq!(&ErlTerm::SmallInteger(1), list.elements.first().unwrap());
+    assert_eq!(&ErlTerm::Integer(99999999), list.elements.last().unwrap());
+
+    assert_eq!(ErlTerm::SmallInteger(5), *list.tail);
 }
 
 #[test]

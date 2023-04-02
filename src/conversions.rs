@@ -66,6 +66,19 @@ impl TryInto<List> for ErlTerm {
         }
     }
 }
+impl TryInto<ImproperList> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<ImproperList, Self::Error> {
+        match self {
+            ErlTerm::ImproperList(val) => Ok(ImproperList {
+                elements: val.elements,
+                tail: val.tail
+            }),
+            _ => Err(()),
+        }
+    }
+}
 impl TryInto<InternalFun> for ErlTerm {
     type Error = ();
 

@@ -301,8 +301,23 @@ impl Decoder {
                 Err(_) => return Err(DecodingError::CompoundTypeDecodingFailure())
             }
         }
-
-        Ok(ErlTerm::List(List { elements: items }))
+        let tail_term = self.read_next_term()?;
+        match tail_term {
+            ErlTerm::List(val) =>
+                if val.is_nil() {
+                    return Ok(ErlTerm::List(List { elements: items }))
+                } else {
+                    // this is an improper list
+                    return Ok(ErlTerm::ImproperList(ImproperList {
+                        elements: items, tail: Box::new(ErlTerm::List(val))
+                    }))
+                },
+            other =>
+                // this is an improper list
+                return Ok(ErlTerm::ImproperList(ImproperList {
+                    elements: items, tail: Box::new(other)
+                }))
+        }
     }
 
     fn decode_nil(&mut self) -> DecodingResult {

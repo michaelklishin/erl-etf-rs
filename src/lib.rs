@@ -50,6 +50,7 @@ pub enum ErlTerm {
     V4Port(ErlV4Port),
     Tuple(Tuple),
     List(List),
+    ImproperList(ImproperList),
     Ref(Ref),
     ExternalFun(ExternalFun),
     InternalFun(InternalFun)
@@ -114,11 +115,21 @@ impl List {
         return Self::empty();
     }
 
+    pub fn is_nil(&self) -> bool {
+        return self.elements.is_empty();
+    }
+
     pub fn empty() -> Self {
         List {
             elements: Vec::new(),
         }
     }
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct ImproperList {
+    pub elements: Vec<ErlTerm>,
+    pub tail: Box<ErlTerm>
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
