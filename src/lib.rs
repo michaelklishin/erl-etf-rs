@@ -51,7 +51,8 @@ pub enum ErlTerm {
     Tuple(Tuple),
     List(List),
     Ref(Ref),
-    ExternalFun(ExternalFun)
+    ExternalFun(ExternalFun),
+    InternalFun(InternalFun)
 }
 
 #[derive(Debug, PartialEq, Eq, Hash, Clone)]
@@ -133,6 +134,19 @@ pub struct ExternalFun {
     pub module: Atom,
     pub function_name: Atom,
     pub arity: u8
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Clone)]
+pub struct InternalFun {
+    pub arity: u8,
+    pub uniq_beam_md5: [u8; 16],
+    pub index: u32,
+    pub free_variable_count: u32,
+    pub module: Atom,
+    pub old_index: i32,
+    pub old_uniq_hash: i32,
+    pub creator_pid: ErlPid,
+    pub free_vars: Vec<ErlTerm>
 }
 
 //

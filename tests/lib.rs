@@ -442,6 +442,24 @@ fn decode_external_fun() {
     assert_eq!(erl_external_fun(atom("erlang"), atom("+"), 2), res);
 }
 
+#[test]
+fn decode_internal_fun() {
+    // term_to_binary(fun() -> 1 + 1 end).
+    // <<131,112,0,0,3,…,97,1,106,106>>
+    let input = binary_data(&[
+        131, 112, 0, 0, 0, 71, 1, 115, 60, 203, 97, 151, 228, 98, 75, 71, 169, 49, 166, 34, 126,
+        65, 11, 0, 0, 0, 0, 0, 0, 0, 1, 100, 0, 1, 97, 97, 0, 98, 3, 153, 230, 91, 88, 100, 0, 13,
+        110, 111, 110, 111, 100, 101, 64, 110, 111, 104, 111, 115, 116, 0, 0, 0, 36, 0, 0, 0, 0, 0,
+        0, 0, 0, 97, 10,
+    ]);
+    let res: InternalFun = ErlTerm::decode(input).unwrap().try_into().unwrap();
+
+    assert_eq!(Atom { name: String::from("a") }, res.module);
+    assert_eq!(0, res.index);
+    assert_eq!(vec![115, 60, 203, 97, 151, 228, 98, 75, 71, 169, 49, 166, 34, 126, 65, 11],
+               res.uniq_beam_md5);
+}
+
 //
 // Helpers
 //

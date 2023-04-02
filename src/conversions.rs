@@ -25,6 +25,27 @@ impl TryInto<u8> for ErlTerm {
         }
     }
 }
+impl TryInto<i32> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<i32, Self::Error> {
+        match self {
+            ErlTerm::SmallInteger(val) => Ok(val as i32),
+            ErlTerm::Integer(val) => Ok(val),
+            _ => Err(()),
+        }
+    }
+}
+impl TryInto<ErlPid> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<ErlPid, Self::Error> {
+        match self {
+            ErlTerm::Pid(val) => Ok(val),
+            _ => Err(()),
+        }
+    }
+}
 impl TryInto<Tuple> for ErlTerm {
     type Error = ();
 
@@ -41,6 +62,16 @@ impl TryInto<List> for ErlTerm {
     fn try_into(self) -> Result<List, Self::Error> {
         match self {
             ErlTerm::List(val) => Ok(List { elements: val.elements }),
+            _ => Err(()),
+        }
+    }
+}
+impl TryInto<InternalFun> for ErlTerm {
+    type Error = ();
+
+    fn try_into(self) -> Result<InternalFun, Self::Error> {
+        match self {
+            ErlTerm::InternalFun(val) => Ok(val),
             _ => Err(()),
         }
     }

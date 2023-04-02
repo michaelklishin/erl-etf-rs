@@ -52,7 +52,8 @@ impl Decoder {
             constants::NIL_EXT => self.decode_nil(),
             constants::LIST_EXT => self.decode_list(),
             constants::NEWER_REFERENCE_EXT => self.decode_newer_reference(),
-            constants::FUN_EXPORT_EXT => self.decode_fun_export(),
+            constants::FUN_EXPORT_EXT => self.decode_external_fun(),
+            constants::NEW_FUN_EXT => self.decode_internal_fun(),
             _ => Err(DecodingError::UnrecognizedTag { tag }),
         }
     }
@@ -329,7 +330,7 @@ impl Decoder {
         }
     }
 
-    fn decode_fun_export(&mut self) -> DecodingResult {
+    fn decode_external_fun(&mut self) -> DecodingResult {
         let module_term = self.read_next_term()?;
         let module_atom = TryInto::<Atom>::try_into(module_term).unwrap();
 
@@ -346,5 +347,38 @@ impl Decoder {
                 arity
             }
         ))
+    }
+
+    fn decode_internal_fun(&mut self) -> DecodingResult {
+        let _size = self.read_u32()?;
+        let arity = self.read_u8()?;
+
+        let mut uniq_beam_md5 = [0; 16];
+        let _ = self.reader.read_exact(&mut uniq_beam_md5);
+
+        let idx = self.read_u32()?;
+        let free_variable_count = self.read_u32()?;
+
+        let module_atom: Atom = self.read_next_term()?.try_into().unwrap();
+
+        let old_idx: i32 = self.read_next_term()?.try_into().unwrap();
+        let old_uniq: i32 = self.read_next_term()?.try_into().unwrap();
+        let creator_pid: ErlPid = self.read_next_term()?.try_into().unwrap();
+        let mut free_vars = Vec::with_capacity(free_variable_count as usize);
+        for _i in 0..free_variable_count {
+            free_vars.push(self.read_next_term()?);
+        }
+
+        Ok(ErlTerm::InternalFun(InternalFun {
+            arity,
+            free_variable_count,
+            uniq_beam_md5,
+            index: idx,
+            module: module_atom,
+            old_index: old_idx,
+            old_uniq_hash: old_uniq,
+            creator_pid,
+            free_vars
+        }))
     }
 }
