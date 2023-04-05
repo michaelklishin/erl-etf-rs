@@ -552,6 +552,7 @@ fn tuple_of_u8(vec: Vec<u8>) -> ErlTerm {
     ErlTerm::Tuple(Tuple { elements: xs })
 }
 
+#[allow(dead_code)]
 fn list_of_u8(vec: Vec<u8>) -> ErlTerm {
     let xs = vec
         .iter()
